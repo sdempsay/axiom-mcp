@@ -105,8 +105,29 @@ public final class IndexStore {
         return dataDir.resolve("catalogs");
     }
 
+    /**
+     * On-disk path for one stored catalog yaml: {@code catalogs/g/a/v.yaml}.
+     *
+     * @param gav coordinates
+     * @return destination yaml
+     */
+    public Path catalogYaml(final Gav gav) {
+        Objects.requireNonNull(gav, "gav");
+        return catalogsDir().resolve(gav.groupId()).resolve(gav.artifactId()).resolve(gav.version() + ".yaml");
+    }
+
+    /**
+     * Loads catalogs on disk, skipping {@code skip} when present (used to replace a GAV).
+     *
+     * @param skip yaml to omit, or {@code null}
+     * @return parsed catalogs
+     */
+    public ExceptionalResponse<List<Catalog>> loadCatalogsExcept(final Path skip) {
+        return loadCatalogs(catalogsDir(), skip);
+    }
+
     private static ExceptionalResponse<IndexStore> reloadInto(final IndexStore store) {
-        return loadCatalogs(store.catalogsDir()).chain((listener, catalogs) -> {
+        return loadCatalogs(store.catalogsDir(), null).chain((listener, catalogs) -> {
             final Merger.Outcome merged = Merger.merge(catalogs);
             if (merged.failed()) {
                 LOG.error("Merge failed: {}", merged.message());
@@ -120,15 +141,21 @@ public final class IndexStore {
         });
     }
 
-    private static ExceptionalResponse<List<Catalog>> loadCatalogs(final Path catalogsDir) {
-        return ExceptionalResource.of(() -> Files.walk(catalogsDir), stream -> readCatalogs(catalogsDir, stream))
-                .execute();
+    private static ExceptionalResponse<List<Catalog>> loadCatalogs(final Path catalogsDir, final Path skip) {
+        return ExceptionalResource.of(
+                () -> Files.walk(catalogsDir),
+                stream -> readCatalogs(catalogsDir, stream, skip)).execute();
     }
 
-    private static List<Catalog> readCatalogs(final Path catalogsDir, final Stream<Path> stream) {
+    private static List<Catalog> readCatalogs(
+            final Path catalogsDir,
+            final Stream<Path> stream,
+            final Path skip) {
+        final Path skipAbs = Objects.nonNull(skip) ? skip.toAbsolutePath().normalize() : null;
         final List<Path> files = stream
                 .filter(Files::isRegularFile)
                 .filter(path -> path.getFileName().toString().endsWith(".yaml"))
+                .filter(path -> Objects.isNull(skipAbs) || !path.toAbsolutePath().normalize().equals(skipAbs))
                 .sorted()
                 .toList();
         final List<Catalog> catalogs = new ArrayList<>();

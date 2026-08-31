@@ -30,9 +30,24 @@ Libraries do not depend on this artifact. Library CI POSTs a GAV after deploy, o
 java -jar server/target/axiom-mcp-server-0.1.0-SNAPSHOT.jar --data ~/.axiom --bind 127.0.0.1:8741
 # optional stdio MCP in the same process:
 java -jar server/target/axiom-mcp-server-0.1.0-SNAPSHOT.jar --data ~/.axiom --stdio
+# add a catalog by Maven GAV (Maven Resolver, classifier=agent-catalog):
+java -jar server/target/axiom-mcp-server-0.1.0-SNAPSHOT.jar catalog add org.dempsay.utils:exceptional:1.0.9 --data ~/.axiom
+# extra remotes (repeatable). Also reads ~/.m2/settings.xml active-profile repositories
+# and AXIOM_REPOS. Maven Central is always included as a fallback.
+java -jar server/target/axiom-mcp-server-0.1.0-SNAPSHOT.jar catalog add g:a:v \
+  --repo https://maven.pkg.github.com/sdempsay/*
 ```
 
 `GET /health` reports catalog and intent counts. Empty store is valid.
+
+```http
+POST /catalogs
+Content-Type: application/json
+
+{"groupId":"org.dempsay.utils","artifactId":"exceptional","version":"1.0.9"}
+```
+
+Missing `classifier=agent-catalog` is an error. Re-add of the same GAV replaces that version.
 
 ## Layout
 
