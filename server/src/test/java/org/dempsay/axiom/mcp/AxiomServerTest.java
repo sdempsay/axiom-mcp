@@ -67,6 +67,27 @@ class AxiomServerTest {
     }
 
     @Test
+    void lookupHttpMatchesTrigger() throws Exception {
+        final Path data = temp.resolve("lookup");
+        writeCatalog(data);
+        final ServerConfig config = new ServerConfig(data, new InetSocketAddress("127.0.0.1", 0), false, List.of());
+        final ExceptionalResponse<AxiomServer> started = AxiomServer.start(config);
+        assertFalse(started.wasError());
+        final AxiomServer server = started.response();
+        try {
+            final String body = get(server, "/lookup?q=IOException&language=java");
+            assertTrue(body.contains("\"ok\":true"));
+            assertTrue(body.contains("external_failure"));
+            assertTrue(body.contains("of().execute();"));
+            final String missing = get(server, "/get?id=nope");
+            assertTrue(missing.contains("\"ok\":false"));
+            assertTrue(missing.contains("Unknown"));
+        } finally {
+            server.stop();
+        }
+    }
+
+    @Test
     void parseBindAndData() {
         final ServerConfig config = ServerConfig.parse(new String[] {
                 "--data", "/tmp/axiom-test",
