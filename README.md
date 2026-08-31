@@ -24,13 +24,23 @@ Libraries do not depend on this artifact. Library CI POSTs a GAV after deploy, o
 - packages `org.dempsay.axiom.mcp`, `.cli`
 - data dir `$AXIOM_DATA` or `~/.axiom`
 
-## Layout (target)
+## Run
+
+```bash
+java -jar server/target/axiom-mcp-server-0.1.0-SNAPSHOT.jar --data ~/.axiom --bind 127.0.0.1:8741
+# optional stdio MCP in the same process:
+java -jar server/target/axiom-mcp-server-0.1.0-SNAPSHOT.jar --data ~/.axiom --stdio
+```
+
+`GET /health` reports catalog and intent counts. Empty store is valid.
+
+## Layout
 
 ```text
 axiom-mcp/
-├── ingest/
-├── server/
-└── cli/
+├── ingest/   # local files + merge
+├── server/   # HTTP + optional stdio MCP
+└── cli/      # later (C5)
 ```
 
 PRDs (in the umbrella): [C3](https://github.com/sdempsay/axiom/blob/master/prds/C3-aggregator.md), [C4](https://github.com/sdempsay/axiom/blob/master/prds/C4-mcp-server.md), [C5](https://github.com/sdempsay/axiom/blob/master/prds/C5-cli.md), [C9](https://github.com/sdempsay/axiom/blob/master/prds/C9-gap-workflow.md).

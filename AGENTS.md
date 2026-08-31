@@ -22,6 +22,14 @@ Cross-cutting work belongs on the **umbrella**, not here.
 - PRDs: umbrella `prds/C3`–`C5`, `C9`
 - `~/.grok/rules/maven.md`
 
+## Javadoc `@since`
+
+First public release is **1.0.0**. New types and methods use `@since 1.0.0`, not `0.1.0` and not the Maven SNAPSHOT version.
+
+## JUnit
+
+dempsay-parent enables JUnit Jupiter when `src/test/resources/tests.md` exists. Do not hand-add `junit-jupiter` to module POMs.
+
 ## Code review
 
 `bin/install-hooks` — pre-commit runs `code-review diff --staged` on Java / `pom.xml`. Bypass: `SKIP_CODE_REVIEW=1`.
