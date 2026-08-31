@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import com.sun.net.httpserver.HttpServer;
 
+import org.dempsay.axiom.mcp.ingest.CatalogFetcher;
 import org.dempsay.axiom.mcp.ingest.IndexStore;
 import org.dempsay.utils.exceptional.api.ExceptionalResponse;
 import org.slf4j.Logger;
@@ -33,6 +34,10 @@ public final class AxiomServer {
      * @param args {@code --data}, {@code --bind host:port}, {@code --stdio}
      */
     public static void main(final String[] args) {
+        if (CatalogAdd.requested(args)) {
+            System.exit(CatalogAdd.run(args, CatalogFetcher.defaults()));
+            return;
+        }
         final ServerConfig config = ServerConfig.parse(args);
         final ExceptionalResponse<AxiomServer> started = start(config);
         if (started.wasError()) {
@@ -58,8 +63,21 @@ public final class AxiomServer {
      */
     public static ExceptionalResponse<AxiomServer> start(final ServerConfig config) {
         Objects.requireNonNull(config, "config");
+        return start(config, CatalogFetcher.defaults());
+    }
+
+    /**
+     * Opens the store and binds HTTP using {@code fetcher} for {@code POST /catalogs}.
+     *
+     * @param config process config
+     * @param fetcher Maven Resolver fetch
+     * @return running server
+     */
+    public static ExceptionalResponse<AxiomServer> start(final ServerConfig config, final CatalogFetcher fetcher) {
+        Objects.requireNonNull(config, "config");
+        Objects.requireNonNull(fetcher, "fetcher");
         return IndexStore.open(config.dataDir())
-                .chain((listener, store) -> HttpApi.start(config.bind(), store)
+                .chain((listener, store) -> HttpApi.start(config.bind(), store, fetcher)
                         .then(http -> new AxiomServer(store, http)));
     }
 

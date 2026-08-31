@@ -38,6 +38,7 @@
     <exceptional.version>1.0.9</exceptional.version>
     <jackson.version>2.18.2</jackson.version>
     <mcp.version>2.0.1</mcp.version>
+    <maven-resolver.version>2.0.21</maven-resolver.version>
     <slf4j.version>2.0.16</slf4j.version>
   </properties>
 
@@ -77,6 +78,11 @@
         <groupId>io.modelcontextprotocol.sdk</groupId>
         <artifactId>mcp-json-jackson2</artifactId>
         <version>${mcp.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.resolver</groupId>
+        <artifactId>maven-resolver-supplier-mvn3</artifactId>
+        <version>${maven-resolver.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>

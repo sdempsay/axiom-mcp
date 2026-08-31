@@ -9,7 +9,7 @@ Cross-cutting work lives in the [umbrella](https://github.com/sdempsay/axiom/blo
 | ID | Task | Status | Issue |
 |---|---|---|---|
 | T5 | C3/C4: HTTP+MCP process, local file store | complete | [#1](https://github.com/sdempsay/axiom-mcp/issues/1) |
-| T6 | C3: add catalog by Maven GAV | pending | [#2](https://github.com/sdempsay/axiom-mcp/issues/2) |
+| T6 | C3: add catalog by Maven GAV | complete | [#2](https://github.com/sdempsay/axiom-mcp/issues/2) |
 | T7 | C3: remove catalog by GAV | pending | [#3](https://github.com/sdempsay/axiom-mcp/issues/3) |
 | T8 | C4: `catalog_lookup` / `catalog_search` / `catalog_get` | pending | [#4](https://github.com/sdempsay/axiom-mcp/issues/4) |
 | T9 | C5: `axiom` CLI | pending | [#5](https://github.com/sdempsay/axiom-mcp/issues/5) |
