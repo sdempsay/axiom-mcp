@@ -43,7 +43,8 @@ class CatalogAddTest {
         final ServerConfig config = new ServerConfig(
                 temp.resolve("data"),
                 new InetSocketAddress("127.0.0.1", 0),
-                false);
+                false,
+                List.of());
         final ExceptionalResponse<AxiomServer> started = AxiomServer.start(config, fetcher);
         assertFalse(started.wasError());
         final AxiomServer server = started.response();

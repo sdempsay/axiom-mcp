@@ -1,13 +1,11 @@
 package org.dempsay.axiom.mcp.ingest;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 
-import org.dempsay.utils.exceptional.api.ExceptionalResponse;
-import org.dempsay.utils.exceptional.api.ExceptionalSupplier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession.CloseableSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
@@ -18,6 +16,12 @@ import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.supplier.RepositorySystemSupplier;
 import org.eclipse.aether.supplier.SessionBuilderSupplier;
+import org.eclipse.aether.util.repository.AuthenticationBuilder;
+
+import org.dempsay.utils.exceptional.api.ExceptionalResponse;
+import org.dempsay.utils.exceptional.api.ExceptionalSupplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Fetches {@code classifier=agent-catalog} (and optional examples zip) with Maven Resolver.
@@ -33,28 +37,103 @@ public final class CatalogFetcher {
 
     private static final String EXAMPLES_CLASSIFIER = "agent-catalog-examples";
 
-    private static final String CENTRAL = "https://repo.maven.apache.org/maven2/";
+    static final String CENTRAL = "https://repo.maven.apache.org/maven2/";
 
     private final Path localRepository;
 
-    private final List<String> remoteUrls;
+    private final List<RemoteRepositorySpec> remoteSpecs;
 
     /**
+     * URL-only remotes (tests, file repositories). No {@code settings.xml} lookup.
+     *
      * @param localRepository Maven local repository
      * @param remoteUrls remote repository base URLs
      */
     public CatalogFetcher(final Path localRepository, final List<String> remoteUrls) {
+        this(localRepository, specsFromUrls(remoteUrls).toArray(RemoteRepositorySpec[]::new));
+    }
+
+    private CatalogFetcher(final Path localRepository, final RemoteRepositorySpec... remoteSpecs) {
         this.localRepository = Objects.requireNonNull(localRepository, "localRepository");
-        this.remoteUrls = List.copyOf(Objects.requireNonNull(remoteUrls, "remoteUrls"));
+        this.remoteSpecs = List.of(Objects.requireNonNull(remoteSpecs, "remoteSpecs"));
     }
 
     /**
-     * @return local {@code ~/.m2/repository} plus Maven Central
+     * Local {@code ~/.m2/repository}, extra URLs, {@code settings.xml} remotes, then Maven Central.
+     *
+     * @param extraRemoteUrls {@code --repo} / {@code AXIOM_REPOS} URLs
+     * @return fetcher
+     */
+    public static CatalogFetcher standard(final List<String> extraRemoteUrls) {
+        final Path m2 = Path.of(System.getProperty("user.home"), ".m2");
+        return standard(m2.resolve("repository"), MavenSettings.defaultSettingsFile(), extraRemoteUrls);
+    }
+
+    /**
+     * @param localRepository Maven local repository
+     * @param settingsXml Maven user settings, may be missing
+     * @param extraRemoteUrls extra remote URLs
+     * @return fetcher
+     */
+    public static CatalogFetcher standard(
+            final Path localRepository,
+            final Path settingsXml,
+            final List<String> extraRemoteUrls) {
+        final LinkedHashMap<String, RemoteRepositorySpec> byUrl = new LinkedHashMap<>();
+        int extraIndex = 0;
+        final List<String> extras = Objects.nonNull(extraRemoteUrls) ? extraRemoteUrls : List.of();
+        for (final String url : extras) {
+            if (Objects.nonNull(url) && !url.isBlank()) {
+                byUrl.putIfAbsent(normalizeUrl(url), new RemoteRepositorySpec("extra-" + extraIndex++, url, null, null));
+            }
+        }
+        for (final RemoteRepositorySpec spec : MavenSettings.repositories(settingsXml)) {
+            byUrl.putIfAbsent(normalizeUrl(spec.url()), spec);
+        }
+        byUrl.putIfAbsent(normalizeUrl(CENTRAL), new RemoteRepositorySpec("central", CENTRAL, null, null));
+        return new CatalogFetcher(localRepository, byUrl.values().toArray(RemoteRepositorySpec[]::new));
+    }
+
+    /**
+     * @return extra URLs, {@code settings.xml}, and Central
      */
     public static CatalogFetcher defaults() {
-        return new CatalogFetcher(
-                Path.of(System.getProperty("user.home"), ".m2", "repository"),
-                List.of(CENTRAL));
+        return standard(envRepos());
+    }
+
+    /**
+     * @return {@code AXIOM_REPOS} split on commas or whitespace
+     */
+    public static List<String> envRepos() {
+        final String env = System.getenv("AXIOM_REPOS");
+        if (Objects.isNull(env) || env.isBlank()) {
+            return List.of();
+        }
+        return List.of(env.trim().split("[,\\s]+"));
+    }
+
+    /**
+     * @return configured remotes (passwords omitted from {@link RemoteRepositorySpec#toString()})
+     */
+    public List<RemoteRepositorySpec> remoteSpecs() {
+        return remoteSpecs;
+    }
+
+    private static List<RemoteRepositorySpec> specsFromUrls(final List<String> remoteUrls) {
+        Objects.requireNonNull(remoteUrls, "remoteUrls");
+        final List<RemoteRepositorySpec> specs = new ArrayList<>();
+        int index = 0;
+        for (final String url : remoteUrls) {
+            specs.add(new RemoteRepositorySpec("remote-" + index++, url, null, null));
+        }
+        return specs;
+    }
+
+    private static String normalizeUrl(final String url) {
+        if (url.endsWith("/")) {
+            return url;
+        }
+        return url + "/";
     }
 
     /**
@@ -119,12 +198,22 @@ public final class CatalogFetcher {
                 true,
                 RepositoryPolicy.UPDATE_POLICY_ALWAYS,
                 RepositoryPolicy.CHECKSUM_POLICY_WARN);
-        return remoteUrls.stream()
-                .map(url -> new RemoteRepository.Builder("remote-" + url.hashCode(), "default", url)
-                        .setReleasePolicy(always)
-                        .setSnapshotPolicy(always)
-                        .build())
+        return remoteSpecs.stream()
+                .map(spec -> remote(spec, always))
                 .toList();
+    }
+
+    private static RemoteRepository remote(final RemoteRepositorySpec spec, final RepositoryPolicy always) {
+        final RemoteRepository.Builder builder = new RemoteRepository.Builder(spec.id(), "default", spec.url())
+                .setReleasePolicy(always)
+                .setSnapshotPolicy(always);
+        if (Objects.nonNull(spec.username()) && Objects.nonNull(spec.password())) {
+            builder.setAuthentication(new AuthenticationBuilder()
+                    .addUsername(spec.username())
+                    .addPassword(spec.password())
+                    .build());
+        }
+        return builder.build();
     }
 
     private static Path resolveArtifact(

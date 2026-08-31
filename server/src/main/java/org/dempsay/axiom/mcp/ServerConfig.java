@@ -2,7 +2,11 @@ package org.dempsay.axiom.mcp;
 
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+
+import org.dempsay.axiom.mcp.ingest.CatalogFetcher;
 
 /**
  * Process flags for {@link AxiomServer}.
@@ -10,13 +14,24 @@ import java.util.Objects;
  * @param dataDir catalog store
  * @param bind listen address
  * @param stdio if true, also run MCP on stdin/stdout
+ * @param repos extra Maven remote URLs ({@code --repo}, {@code AXIOM_REPOS})
  * @author Shawn Dempsay {@literal <shawn@dempsay.org>}
  * @since 1.0.0
  */
-public record ServerConfig(Path dataDir, InetSocketAddress bind, boolean stdio) {
+public record ServerConfig(Path dataDir, InetSocketAddress bind, boolean stdio, List<String> repos) {
 
     /**
-     * Parses {@code --data}, {@code --bind host:port}, {@code --stdio}.
+     * @param dataDir catalog store
+     * @param bind listen address
+     * @param stdio stdio MCP
+     * @param repos extra remotes
+     */
+    public ServerConfig {
+        repos = List.copyOf(Objects.requireNonNullElse(repos, List.of()));
+    }
+
+    /**
+     * Parses {@code --data}, {@code --bind host:port}, {@code --stdio}, {@code --repo URL}.
      *
      * @param args command line
      * @return config
@@ -26,6 +41,7 @@ public record ServerConfig(Path dataDir, InetSocketAddress bind, boolean stdio) 
         String host = "127.0.0.1";
         int port = 8741;
         boolean stdio = false;
+        final List<String> repos = new ArrayList<>(CatalogFetcher.envRepos());
         if (Objects.nonNull(args)) {
             for (int i = 0; i < args.length; i++) {
                 final String arg = args[i];
@@ -39,10 +55,13 @@ public record ServerConfig(Path dataDir, InetSocketAddress bind, boolean stdio) 
                     port = Integer.parseInt(parts[1]);
                 } else if ("--stdio".equals(arg)) {
                     stdio = true;
+                } else if ("--repo".equals(arg) && i + 1 < args.length) {
+                    i++;
+                    repos.add(args[i]);
                 }
             }
         }
-        return new ServerConfig(data, new InetSocketAddress(host, port), stdio);
+        return new ServerConfig(data, new InetSocketAddress(host, port), stdio, repos);
     }
 
     /**

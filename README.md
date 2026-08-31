@@ -32,6 +32,10 @@ java -jar server/target/axiom-mcp-server-0.1.0-SNAPSHOT.jar --data ~/.axiom --bi
 java -jar server/target/axiom-mcp-server-0.1.0-SNAPSHOT.jar --data ~/.axiom --stdio
 # add a catalog by Maven GAV (Maven Resolver, classifier=agent-catalog):
 java -jar server/target/axiom-mcp-server-0.1.0-SNAPSHOT.jar catalog add org.dempsay.utils:exceptional:1.0.9 --data ~/.axiom
+# extra remotes (repeatable). Also reads ~/.m2/settings.xml active-profile repositories
+# and AXIOM_REPOS. Maven Central is always included as a fallback.
+java -jar server/target/axiom-mcp-server-0.1.0-SNAPSHOT.jar catalog add g:a:v \
+  --repo https://maven.pkg.github.com/sdempsay/*
 ```
 
 `GET /health` reports catalog and intent counts. Empty store is valid.

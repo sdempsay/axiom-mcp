@@ -31,14 +31,14 @@ public final class AxiomServer {
     }
 
     /**
-     * @param args {@code --data}, {@code --bind host:port}, {@code --stdio}
+     * @param args {@code --data}, {@code --bind host:port}, {@code --stdio}, {@code --repo URL}
      */
     public static void main(final String[] args) {
+        final ServerConfig config = ServerConfig.parse(args);
         if (CatalogAdd.requested(args)) {
-            System.exit(CatalogAdd.run(args, CatalogFetcher.defaults()));
+            System.exit(CatalogAdd.run(args, CatalogFetcher.standard(config.repos())));
             return;
         }
-        final ServerConfig config = ServerConfig.parse(args);
         final ExceptionalResponse<AxiomServer> started = start(config);
         if (started.wasError()) {
             System.err.println("axiom-mcp failed to start (data dir unwritable or catalogs invalid)");
@@ -63,7 +63,7 @@ public final class AxiomServer {
      */
     public static ExceptionalResponse<AxiomServer> start(final ServerConfig config) {
         Objects.requireNonNull(config, "config");
-        return start(config, CatalogFetcher.defaults());
+        return start(config, CatalogFetcher.standard(config.repos()));
     }
 
     /**

@@ -11,6 +11,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.dempsay.utils.exceptional.api.ExceptionalResponse;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,7 @@ class AxiomServerTest {
     @Test
     void emptyStoreHealthOk() throws Exception {
         final Path data = temp.resolve("empty");
-        final ServerConfig config = new ServerConfig(data, new InetSocketAddress("127.0.0.1", 0), false);
+        final ServerConfig config = new ServerConfig(data, new InetSocketAddress("127.0.0.1", 0), false, List.of());
         final ExceptionalResponse<AxiomServer> started = AxiomServer.start(config);
         assertFalse(started.wasError());
         final AxiomServer server = started.response();
@@ -48,7 +49,7 @@ class AxiomServerTest {
     @Test
     void restartReloadsCatalogsFromDisk() throws Exception {
         final Path data = temp.resolve("reload");
-        final ServerConfig config = new ServerConfig(data, new InetSocketAddress("127.0.0.1", 0), false);
+        final ServerConfig config = new ServerConfig(data, new InetSocketAddress("127.0.0.1", 0), false, List.of());
         final ExceptionalResponse<AxiomServer> first = AxiomServer.start(config);
         assertFalse(first.wasError());
         first.response().stop();
@@ -70,12 +71,14 @@ class AxiomServerTest {
         final ServerConfig config = ServerConfig.parse(new String[] {
                 "--data", "/tmp/axiom-test",
                 "--bind", "127.0.0.1:0",
-                "--stdio"
+                "--stdio",
+                "--repo", "https://maven.pkg.github.com/sdempsay/*"
         });
         assertEquals(Path.of("/tmp/axiom-test"), config.dataDir());
         assertEquals("127.0.0.1", config.bind().getHostString());
         assertEquals(0, config.bind().getPort());
         assertTrue(config.stdio());
+        assertTrue(config.repos().contains("https://maven.pkg.github.com/sdempsay/*"));
     }
 
     private static String get(final AxiomServer server, final String path) throws Exception {

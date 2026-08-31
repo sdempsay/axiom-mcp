@@ -41,7 +41,7 @@ public final class CatalogAdd {
         Objects.requireNonNull(args, "args");
         Objects.requireNonNull(fetcher, "fetcher");
         if (args.length < 3) {
-            System.err.println("usage: axiom catalog add groupId:artifactId:version [--data DIR]");
+            System.err.println("usage: axiom catalog add groupId:artifactId:version [--data DIR] [--repo URL]");
             return 1;
         }
         final ExceptionalResponse<Gav> parsed = ExceptionalSupplier.of(() -> Gav.parse(args[2])).execute();
