@@ -11,7 +11,7 @@ import java.util.Map;
  * @param intents sorted by id
  * @param aliases superseded id to current id
  * @author Shawn Dempsay {@literal <shawn@dempsay.org>}
- * @since 0.1.0
+ * @since 1.0.0
  */
 public record CatalogIndex(
         int schemaVersion,

@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
  * Live catalog process: HTTP plus optional stdio MCP, one JVM, local files.
  *
  * @author Shawn Dempsay {@literal <shawn@dempsay.org>}
- * @since 0.1.0
+ * @since 1.0.0
  */
 @SuppressWarnings("checkstyle:IllegalImport")
 public final class AxiomServer {

@@ -11,7 +11,7 @@ import java.util.Objects;
  * @param bind listen address
  * @param stdio if true, also run MCP on stdin/stdout
  * @author Shawn Dempsay {@literal <shawn@dempsay.org>}
- * @since 0.1.0
+ * @since 1.0.0
  */
 public record ServerConfig(Path dataDir, InetSocketAddress bind, boolean stdio) {
 

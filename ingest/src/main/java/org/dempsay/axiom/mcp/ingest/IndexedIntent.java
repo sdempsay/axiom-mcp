@@ -16,7 +16,7 @@ import org.dempsay.axiom.model.Severity;
  * @param artifact producing GAV
  * @param ownerRepo owning repo, may be null
  * @author Shawn Dempsay {@literal <shawn@dempsay.org>}
- * @since 0.1.0
+ * @since 1.0.0
  */
 public record IndexedIntent(
         String id,

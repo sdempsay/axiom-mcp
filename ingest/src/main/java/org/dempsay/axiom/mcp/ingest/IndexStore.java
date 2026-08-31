@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
  * Local-file catalog store. Data dir is {@code $AXIOM_DATA} or {@code ~/.axiom}.
  *
  * @author Shawn Dempsay {@literal <shawn@dempsay.org>}
- * @since 0.1.0
+ * @since 1.0.0
  */
 public final class IndexStore {
 

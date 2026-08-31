@@ -15,7 +15,7 @@ import org.junit.jupiter.api.io.TempDir;
  * Local file store: create dir, empty is valid, reload from disk.
  *
  * @author Shawn Dempsay {@literal <shawn@dempsay.org>}
- * @since 0.1.0
+ * @since 1.0.0
  */
 class IndexStoreTest {
 

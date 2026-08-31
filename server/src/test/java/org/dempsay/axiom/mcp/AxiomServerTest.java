@@ -20,7 +20,7 @@ import org.junit.jupiter.api.io.TempDir;
  * Process start: data dir, empty store, HTTP health, reload after restart.
  *
  * @author Shawn Dempsay {@literal <shawn@dempsay.org>}
- * @since 0.1.0
+ * @since 1.0.0
  */
 class AxiomServerTest {
 
