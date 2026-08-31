@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Point this clone at repo-tracked hooks/ (pre-commit code-review dogfood).
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+chmod +x "${root}/hooks/pre-commit"
+git -C "${root}" config core.hooksPath hooks
+echo "core.hooksPath=$(git -C "${root}" config --get core.hooksPath)"
+echo "pre-commit will run code-review when Java or pom.xml is staged."
+echo "Bypass: SKIP_CODE_REVIEW=1 git commit ..."

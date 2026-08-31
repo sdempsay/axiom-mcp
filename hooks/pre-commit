@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# Dogfood: run agentic code-review on staged Java / POM before the commit lands.
+set -euo pipefail
+
+if [[ "${SKIP_CODE_REVIEW:-}" == "1" ]]; then
+  echo "pre-commit: SKIP_CODE_REVIEW=1, skipping code-review"
+  exit 0
+fi
+
+staged="$(git diff --cached --name-only --diff-filter=ACMR || true)"
+if [[ -z "${staged}" ]]; then
+  exit 0
+fi
+
+if ! printf '%s\n' "${staged}" | grep -Eq '\.java$|\.java\.ftl$|(^|/)pom\.xml$'; then
+  exit 0
+fi
+
+if ! command -v code-review >/dev/null 2>&1; then
+  echo "pre-commit: code-review is not on PATH." >&2
+  echo "Install from review-pipeline (bin/setup-dev-machine → ~/tools/code-review)." >&2
+  echo "Bypass this once with SKIP_CODE_REVIEW=1 git commit ..." >&2
+  exit 1
+fi
+
+git_dir="$(git rev-parse --git-dir)"
+report="${git_dir}/axiom-code-review.md"
+
+echo "pre-commit: code-review diff --staged (Java/POM dogfood)"
+code-review diff --staged --no-chat --output "${report}"
+
+recommendation="$(
+  awk '
+    BEGIN { IGNORECASE = 1 }
+    /^### Recommendation/ {
+      getline
+      while ($0 ~ /^[[:space:]]*$/) {
+        if (getline <= 0) {
+          exit
+        }
+      }
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "")
+      print toupper($0)
+      exit
+    }
+  ' "${report}"
+)"
+
+case "${recommendation}" in
+  APPROVE|APPROVE_WITH_NITS)
+    echo "pre-commit: code-review ${recommendation}"
+    exit 0
+    ;;
+  REQUEST_CHANGES|BLOCK)
+    echo "pre-commit: code-review ${recommendation}. Fix must-fix findings, then commit again." >&2
+    echo "Report: ${report}" >&2
+    echo "Bypass this once with SKIP_CODE_REVIEW=1 git commit ..." >&2
+    exit 1
+    ;;
+  *)
+    echo "pre-commit: could not parse ### Recommendation from ${report}" >&2
+    echo "Got: '${recommendation:-<empty>}'" >&2
+    echo "Bypass this once with SKIP_CODE_REVIEW=1 git commit ..." >&2
+    exit 1
+    ;;
+esac
