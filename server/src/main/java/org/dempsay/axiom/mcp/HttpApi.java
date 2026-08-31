@@ -3,6 +3,8 @@ package org.dempsay.axiom.mcp;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -14,6 +16,7 @@ import com.sun.net.httpserver.HttpServer;
 
 import org.dempsay.axiom.mcp.ingest.CatalogFetcher;
 import org.dempsay.axiom.mcp.ingest.CatalogIngest;
+import org.dempsay.axiom.mcp.ingest.CatalogLookup;
 import org.dempsay.axiom.mcp.ingest.Gav;
 import org.dempsay.axiom.mcp.ingest.IndexStore;
 import org.dempsay.utils.exceptional.api.ExceptionalResponse;
@@ -51,6 +54,9 @@ public final class HttpApi {
             final HttpServer server = HttpServer.create(bind, 0);
             server.createContext("/health", exchange -> writeJson(exchange, 200, health(store)));
             server.createContext("/catalogs", exchange -> addCatalog(exchange, store, fetcher));
+            server.createContext("/lookup", exchange -> lookup(exchange, store));
+            server.createContext("/search", exchange -> search(exchange, store));
+            server.createContext("/get", exchange -> get(exchange, store));
             server.setExecutor(null);
             server.start();
             return server;
@@ -85,6 +91,66 @@ public final class HttpApi {
         final Map<String, Object> body = health(store);
         body.put("added", parsed.response().compact());
         writeJson(exchange, 200, body);
+    }
+
+    private static void lookup(final HttpExchange exchange, final IndexStore store) throws IOException {
+        if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+            writeJson(exchange, 405, error("GET required"));
+            return;
+        }
+        writeJson(exchange, 200, CatalogLookup.lookup(
+                store,
+                queryParam(exchange, "q"),
+                queryParam(exchange, "language"),
+                intParam(exchange, "limit", 0)));
+    }
+
+    private static void search(final HttpExchange exchange, final IndexStore store) throws IOException {
+        if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+            writeJson(exchange, 405, error("GET required"));
+            return;
+        }
+        writeJson(exchange, 200, CatalogLookup.search(
+                store,
+                queryParam(exchange, "q"),
+                intParam(exchange, "limit", 0),
+                booleanParam(exchange, "includeSnippet")));
+    }
+
+    private static void get(final HttpExchange exchange, final IndexStore store) throws IOException {
+        if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+            writeJson(exchange, 405, error("GET required"));
+            return;
+        }
+        final CatalogLookup.Result result = CatalogLookup.get(store, queryParam(exchange, "id"));
+        writeJson(exchange, result.ok() ? 200 : 404, result);
+    }
+
+    private static String queryParam(final HttpExchange exchange, final String name) {
+        final String raw = exchange.getRequestURI().getRawQuery();
+        if (Objects.isNull(raw) || raw.isBlank()) {
+            return null;
+        }
+        for (final String part : raw.split("&")) {
+            final String[] kv = part.split("=", 2);
+            if (kv.length == 2 && name.equals(URLDecoder.decode(kv[0], StandardCharsets.UTF_8))) {
+                return URLDecoder.decode(kv[1], StandardCharsets.UTF_8);
+            }
+        }
+        return null;
+    }
+
+    private static int intParam(final HttpExchange exchange, final String name, final int fallback) {
+        final String value = queryParam(exchange, name);
+        if (Objects.isNull(value) || value.isBlank()) {
+            return fallback;
+        }
+        final ExceptionalResponse<Integer> parsed = ExceptionalSupplier.of(() -> Integer.parseInt(value)).execute();
+        return parsed.wasError() ? fallback : parsed.response();
+    }
+
+    private static boolean booleanParam(final HttpExchange exchange, final String name) {
+        return "true".equalsIgnoreCase(queryParam(exchange, name));
     }
 
     private static ExceptionalResponse<Gav> parseGav(final byte[] raw) {
@@ -124,7 +190,7 @@ public final class HttpApi {
     private static void writeJson(
             final HttpExchange exchange,
             final int status,
-            final Map<String, Object> body) throws IOException {
+            final Object body) throws IOException {
         final byte[] bytes = JSON.writeValueAsBytes(body);
         exchange.getResponseHeaders().add("Content-Type", "application/json");
         exchange.sendResponseHeaders(status, bytes.length);

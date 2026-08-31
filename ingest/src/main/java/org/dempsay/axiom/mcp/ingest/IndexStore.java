@@ -42,11 +42,13 @@ public final class IndexStore {
 
     private final Path dataDir;
     private CatalogIndex index;
+    private List<StoredCatalog> stored;
     private int catalogCount;
 
     private IndexStore(final Path dataDir, final CatalogIndex index, final int catalogCount) {
         this.dataDir = dataDir;
         this.index = index;
+        this.stored = List.of();
         this.catalogCount = catalogCount;
     }
 
@@ -92,6 +94,13 @@ public final class IndexStore {
     }
 
     /**
+     * @return catalogs loaded from disk (paths plus documents)
+     */
+    public List<StoredCatalog> stored() {
+        return stored;
+    }
+
+    /**
      * @return number of catalog yaml files loaded
      */
     public int catalogCount() {
@@ -123,11 +132,14 @@ public final class IndexStore {
      * @return parsed catalogs
      */
     public ExceptionalResponse<List<Catalog>> loadCatalogsExcept(final Path skip) {
-        return loadCatalogs(catalogsDir(), skip);
+        return loadStored(catalogsDir(), skip).then(stored -> stored.stream()
+                .map(StoredCatalog::catalog)
+                .toList());
     }
 
     private static ExceptionalResponse<IndexStore> reloadInto(final IndexStore store) {
-        return loadCatalogs(store.catalogsDir(), null).chain((listener, catalogs) -> {
+        return loadStored(store.catalogsDir(), null).chain((listener, stored) -> {
+            final List<Catalog> catalogs = stored.stream().map(StoredCatalog::catalog).toList();
             final Merger.Outcome merged = Merger.merge(catalogs);
             if (merged.failed()) {
                 LOG.error("Merge failed: {}", merged.message());
@@ -135,19 +147,20 @@ public final class IndexStore {
             }
             return writeIndex(store.dataDir.resolve("index.yaml"), merged.index()).then(written -> {
                 store.index = written;
-                store.catalogCount = catalogs.size();
+                store.stored = stored;
+                store.catalogCount = stored.size();
                 return store;
             });
         });
     }
 
-    private static ExceptionalResponse<List<Catalog>> loadCatalogs(final Path catalogsDir, final Path skip) {
+    private static ExceptionalResponse<List<StoredCatalog>> loadStored(final Path catalogsDir, final Path skip) {
         return ExceptionalResource.of(
                 () -> Files.walk(catalogsDir),
                 stream -> readCatalogs(catalogsDir, stream, skip)).execute();
     }
 
-    private static List<Catalog> readCatalogs(
+    private static List<StoredCatalog> readCatalogs(
             final Path catalogsDir,
             final Stream<Path> stream,
             final Path skip) {
@@ -158,13 +171,13 @@ public final class IndexStore {
                 .filter(path -> Objects.isNull(skipAbs) || !path.toAbsolutePath().normalize().equals(skipAbs))
                 .sorted()
                 .toList();
-        final List<Catalog> catalogs = new ArrayList<>();
+        final List<StoredCatalog> catalogs = new ArrayList<>();
         for (final Path file : files) {
             final ExceptionalResponse<ValidationResult> validated = CatalogValidator.validate(file);
             if (validated.wasError() || !validated.response().isValid()) {
                 throw new IllegalStateException("Invalid catalog " + catalogsDir.relativize(file));
             }
-            catalogs.add(validated.response().catalog());
+            catalogs.add(new StoredCatalog(file, validated.response().catalog()));
         }
         return List.copyOf(catalogs);
     }

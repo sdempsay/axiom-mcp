@@ -49,6 +49,14 @@ Content-Type: application/json
 
 Missing `classifier=agent-catalog` is an error. Re-add of the same GAV replaces that version.
 
+```http
+GET /lookup?q=handle+IOException&language=java&limit=3
+GET /search?q=mac&limit=10
+GET /get?id=external_failure
+```
+
+Empty lookup is success with a hint to `catalog_search` or `catalog_gap`. Get of an unknown id is an error with nearby hits. MCP tools `catalog_lookup`, `catalog_search`, and `catalog_get` share the same records (`--stdio`). Tool descriptions tell agents to look up before writing a helper, try/catch, or `*Util`.
+
 ## Layout
 
 ```text
