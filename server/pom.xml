@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.dempsay.axiom</groupId>
     <artifactId>axiom-mcp</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>axiom-mcp-server</artifactId>
