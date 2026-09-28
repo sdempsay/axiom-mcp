@@ -1,5 +1,9 @@
 # ACTIONS
 
+## 2026-09-28
+
+- SNAPSHOT is `1.1.0-SNAPSHOT` (tracks the `1.0` line). `@since` stays `1.0.0` until a `1.0` tag exists.
+
 ## 2026-08-31
 
 - C4 (`Fixes #4`): `catalog_lookup` / `catalog_search` / `catalog_get` over HTTP (`GET /lookup`, `/search`, `/get`) and MCP stdio. Lookup matches id/title/triggers/blessed.symbol with optional language filter and returns snippet text. Empty lookup is success plus a search/gap hint. Get of an unknown id is an error with nearby hits. Tool descriptions tell agents to look up before writing a helper / try-catch / `*Util`.

@@ -80,7 +80,7 @@ public final class McpStdio {
                         }
                         """);
         final McpSyncServer server = McpServer.sync(transport)
-                .serverInfo("axiom-mcp", "0.1.0-SNAPSHOT")
+                .serverInfo("axiom-mcp", "1.1.0-SNAPSHOT")
                 .capabilities(ServerCapabilities.builder().tools(true).build())
                 .toolCall(lookup, (exchange, request) -> jsonResult(CatalogLookup.lookup(
                         store,

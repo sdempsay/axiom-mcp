@@ -27,14 +27,14 @@ Libraries do not depend on this artifact. Library CI POSTs a GAV after deploy, o
 ## Run
 
 ```bash
-java -jar server/target/axiom-mcp-server-0.1.0-SNAPSHOT.jar --data ~/.axiom --bind 127.0.0.1:8741
+java -jar server/target/axiom-mcp-server-1.1.0-SNAPSHOT.jar --data ~/.axiom --bind 127.0.0.1:8741
 # optional stdio MCP in the same process:
-java -jar server/target/axiom-mcp-server-0.1.0-SNAPSHOT.jar --data ~/.axiom --stdio
+java -jar server/target/axiom-mcp-server-1.1.0-SNAPSHOT.jar --data ~/.axiom --stdio
 # add a catalog by Maven GAV (Maven Resolver, classifier=agent-catalog):
-java -jar server/target/axiom-mcp-server-0.1.0-SNAPSHOT.jar catalog add org.dempsay.utils:exceptional:1.0.9 --data ~/.axiom
+java -jar server/target/axiom-mcp-server-1.1.0-SNAPSHOT.jar catalog add org.dempsay.utils:exceptional:1.1.0-SNAPSHOT --data ~/.axiom
 # extra remotes (repeatable). Also reads ~/.m2/settings.xml active-profile repositories
 # and AXIOM_REPOS. Maven Central is always included as a fallback.
-java -jar server/target/axiom-mcp-server-0.1.0-SNAPSHOT.jar catalog add g:a:v \
+java -jar server/target/axiom-mcp-server-1.1.0-SNAPSHOT.jar catalog add g:a:v \
   --repo https://maven.pkg.github.com/sdempsay/*
 ```
 

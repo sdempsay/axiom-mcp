@@ -22,9 +22,15 @@ Cross-cutting work belongs on the **umbrella**, not here.
 - PRDs: umbrella `prds/C3`–`C5`, `C9`
 - `~/.grok/rules/maven.md`
 
-## Javadoc `@since`
+## Versioning (`@since` and SNAPSHOT)
 
-First public release is **1.0.0**. New types and methods use `@since 1.0.0`, not `0.1.0` and not the Maven SNAPSHOT version.
+SNAPSHOT minor is one ahead of the release line. This repo is `1.1.0-SNAPSHOT` (tracks `1.0.x`). Never use the POM SNAPSHOT as `@since`. Test classes do not need `@since`.
+
+1. `git tag --sort=-v:refname | head -5`
+2. POM e.g. `1.1.0-SNAPSHOT` → release line `1.0`
+3. Latest tag on that line (e.g. `1.0.12`)
+4. `@since` = that tag + 1 patch (`1.0.13`)
+5. No tags on the line yet → `1.(x-1).0` (`1.1.0-SNAPSHOT` → `@since 1.0.0`)
 
 ## JUnit
 
