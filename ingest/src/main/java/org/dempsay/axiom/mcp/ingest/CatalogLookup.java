@@ -116,6 +116,7 @@ public final class CatalogLookup {
             final String query,
             final String language,
             final int limit) {
+        refresh(store);
         return rank(store, query, language, clamp(limit, LOOKUP_DEFAULT), true, false);
     }
 
@@ -133,6 +134,7 @@ public final class CatalogLookup {
             final String query,
             final int limit,
             final boolean includeSnippet) {
+        refresh(store);
         return rank(store, query, null, clamp(limit, SEARCH_DEFAULT), includeSnippet, true);
     }
 
@@ -145,6 +147,7 @@ public final class CatalogLookup {
      */
     public static Result get(final IndexStore store, final String id) {
         Objects.requireNonNull(store, "store");
+        refresh(store);
         if (Objects.isNull(id) || id.isBlank()) {
             return new Result(false, "id is required", List.of(), null, List.of());
         }
@@ -159,6 +162,10 @@ public final class CatalogLookup {
         }
         final Result nearby = search(store, id, 5, false);
         return new Result(false, "Unknown intent id '" + id + "'", List.of(), null, nearby.hits());
+    }
+
+    private static void refresh(final IndexStore store) {
+        store.reload();
     }
 
     private static Result rank(

@@ -172,6 +172,7 @@ public final class HttpApi {
     }
 
     private static Map<String, Object> health(final IndexStore store) {
+        store.reload();
         final Map<String, Object> body = new LinkedHashMap<>();
         body.put("ok", true);
         body.put("dataDir", store.dataDir().toString());

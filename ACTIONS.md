@@ -1,5 +1,9 @@
 # ACTIONS
 
+## 2026-09-28
+
+- Lookup/search/get and `/health` reload the index from disk so `catalog add` in another process is visible without restarting HTTP.
+
 ## 2026-08-31
 
 - C4 (`Fixes #4`): `catalog_lookup` / `catalog_search` / `catalog_get` over HTTP (`GET /lookup`, `/search`, `/get`) and MCP stdio. Lookup matches id/title/triggers/blessed.symbol with optional language filter and returns snippet text. Empty lookup is success plus a search/gap hint. Get of an unknown id is an error with nearby hits. Tool descriptions tell agents to look up before writing a helper / try-catch / `*Util`.
