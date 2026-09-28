@@ -74,8 +74,28 @@ class CatalogLookupTest {
         assertTrue(shown.hits().get(0).snippet().contains("readString"));
     }
 
+    @Test
+    void lookupReloadsCatalogAddedOnDisk() throws Exception {
+        final Path data = temp.resolve("reload");
+        final ExceptionalResponse<IndexStore> opened = IndexStore.open(data);
+        assertFalse(opened.wasError());
+        final IndexStore store = opened.response();
+        assertTrue(CatalogLookup.lookup(store, "IOException", "java", 3).hits().isEmpty());
+        writeCatalogFiles(data);
+        final CatalogLookup.Result result = CatalogLookup.lookup(store, "IOException", "java", 3);
+        assertEquals(1, result.hits().size());
+        assertEquals("external_failure", result.hits().get(0).id());
+    }
+
     private IndexStore openWithCatalog() throws Exception {
         final Path data = temp.resolve("data");
+        writeCatalogFiles(data);
+        final ExceptionalResponse<IndexStore> opened = IndexStore.open(data);
+        assertFalse(opened.wasError());
+        return opened.response();
+    }
+
+    private static void writeCatalogFiles(final Path data) throws Exception {
         final Path dir = data.resolve("catalogs").resolve("org.dempsay.utils").resolve("exceptional");
         Files.createDirectories(dir.resolve("exceptional"));
         Files.writeString(dir.resolve("exceptional").resolve("snippet.java"),
@@ -124,8 +144,5 @@ class CatalogLookupTest {
                     supersedes:
                       - file_read_optional
                 """);
-        final ExceptionalResponse<IndexStore> opened = IndexStore.open(data);
-        assertFalse(opened.wasError());
-        return opened.response();
     }
 }
